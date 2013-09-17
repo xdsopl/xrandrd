@@ -29,6 +29,31 @@ char *mode_str(XRRScreenResources *sr, RRMode mode)
 	return "dunno";
 }
 
+void output_info(Display *display, XRRScreenResources *sr, RROutput output)
+{
+	XRROutputInfo *oi = XRRGetOutputInfo(display, sr, output);
+	char *mode = "disabled";
+	if (oi->crtc) {
+		XRRCrtcInfo *ci = XRRGetCrtcInfo(display, sr, oi->crtc);
+		mode = mode_str(sr, ci->mode);
+		XRRFreeCrtcInfo(ci);
+	}
+	fprintf(stderr, "%s %s %s", oi->name, con_str(oi->connection), mode);
+	for (int i = 0; i < oi->nmode; i++)
+		fprintf(stderr, " %s", mode_str(sr, oi->modes[i]));
+	fprintf(stderr, "\n");
+
+	XRRFreeOutputInfo(oi);
+}
+
+void current_state(Display *display, Window window)
+{
+	XRRScreenResources *sr = XRRGetScreenResources(display, window);
+	for (int i = 0; i < sr->noutput; i++)
+		output_info(display, sr, sr->outputs[i]);
+	XRRFreeScreenResources(sr);
+}
+
 int main()
 {
 	Display *display = XOpenDisplay(0);
@@ -43,7 +68,10 @@ int main()
 		fprintf(stderr, "you do not have the Xrandr extension!\n");
 		return 1;
 	}
-	XRRSelectInput(display, DefaultRootWindow(display), RROutputChangeNotifyMask);
+
+	Window root = DefaultRootWindow(display);
+	current_state(display, root);
+	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
 	while (1) {
 		XEvent event;
@@ -58,11 +86,9 @@ int main()
 			continue;
 		}
 		XRROutputChangeNotifyEvent *ocne = (XRROutputChangeNotifyEvent *)&event;
-//		fprintf(stderr, "output: %lu connection: %d\n", ocne->output, ocne->connection);
+//		fprintf(stderr, "output: %lu connection: %d crtc: %lu mode: %lu\n", ocne->output, ocne->connection, ocne->crtc, ocne->mode);
 		XRRScreenResources *sr = XRRGetScreenResources(display, ne->window);
-		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, ocne->output);
-		fprintf(stderr, "%s %s %s\n", oi->name, con_str(ocne->connection), mode_str(sr, ocne->mode));
-		XRRFreeOutputInfo(oi);
+		output_info(display, sr, ocne->output);
 		XRRFreeScreenResources(sr);
 	}
 	XCloseDisplay(display);
