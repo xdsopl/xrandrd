@@ -1,0 +1,21 @@
+
+xrandrd - try to do the right thing without user interaction if a display gets (dis-)connected
+Written in 2013 by <Ahmet Inan> <ainan@mathematik.uni-freiburg.de>
+To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+
+WIP: this is still not finished.
+proof of concept can be found in "configure_displays.sh"
+
+Usage: xrandrd
+
+xrandrd will wait until a display get (dis-)connected and do the following:
+
+1) disable all disconnected outputs.
+2) find common mode if more than one display is connected.
+3) enable all connected outputs using common mode or their preferred mode if no common mode could be found.
+
+this behaviour is perfect to prepare your notebook for presentations on a projector.
+no frustrating attemps to play with broken display configurators, just plug in and start talking.
+unplugging should configure your notebook back to its best standalone settings and off you go.
+
