@@ -7,6 +7,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 #include <X11/extensions/Xrandr.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -159,9 +160,23 @@ int main()
 		fprintf(stderr, "common mode: %dx%d\n", width, height);
 	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
+	int countdown = 0;
 	while (1) {
 		XEvent event;
-		XNextEvent(display, &event);
+		if (!countdown || XPending(display)) {
+			XNextEvent(display, &event);
+			countdown = 10;
+		} else {
+			sleep(1);
+			if (!(--countdown)) {
+				fprintf(stderr, "10 seconds elapsed since last event.\n");
+				if (common_mode(display, root, &width, &height))
+					fprintf(stderr, "common mode: %dx%d\n", width, height);
+				else
+					fprintf(stderr, "no common mode\n");
+			}
+			continue;
+		}
 		if ((event.type-event_base_return) != RRNotify) {
 			fprintf(stderr, "Ignoring event type %d\n", event.type);
 			continue;
@@ -176,10 +191,6 @@ int main()
 		XRRScreenResources *sr = XRRGetScreenResources(display, ne->window);
 		output_info(display, sr, ocne->output);
 		XRRFreeScreenResources(sr);
-		if (common_mode(display, root, &width, &height))
-			fprintf(stderr, "common mode: %dx%d\n", width, height);
-		else
-			fprintf(stderr, "no common mode\n");
 	}
 	XCloseDisplay(display);
 
