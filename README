@@ -9,6 +9,9 @@ proof of concept can be found in "configure_displays.sh"
 
 Usage: xrandrd
 
+for the moment, we need xrandr to delegate the actual changes:
+# xrandrd | while read line ; do $line ; done
+
 xrandrd will wait until a display get (dis-)connected and do the following:
 
 1) disable all disconnected outputs.
