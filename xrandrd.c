@@ -138,6 +138,50 @@ int common_mode(Display *display, Window window, unsigned int *width, unsigned i
 	return num == counter;
 }
 
+void set_common(Display *display, Window window, unsigned int width, unsigned int height)
+{
+	fprintf(stdout, "xrandr");
+	XRRScreenResources *sr = XRRGetScreenResources(display, window);
+	for (int i = 0; i < sr->noutput; i++) {
+		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
+		if (oi->connection == RR_Connected)
+			fprintf(stdout, " --output %s --mode %dx%d", oi->name, width, height);
+		else if (oi->connection == RR_Disconnected)
+			fprintf(stdout, " --output %s --off", oi->name);
+		XRRFreeOutputInfo(oi);
+	}
+	XRRFreeScreenResources(sr);
+	fprintf(stdout, "\n");
+}
+
+void set_auto(Display *display, Window window)
+{
+	fprintf(stdout, "xrandr");
+	XRRScreenResources *sr = XRRGetScreenResources(display, window);
+	for (int i = 0; i < sr->noutput; i++) {
+		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
+		if (oi->connection == RR_Connected)
+			fprintf(stdout, " --output %s --auto", oi->name);
+		else if (oi->connection == RR_Disconnected)
+			fprintf(stdout, " --output %s --off", oi->name);
+		XRRFreeOutputInfo(oi);
+	}
+	XRRFreeScreenResources(sr);
+	fprintf(stdout, "\n");
+}
+
+void lets_rock(Display *display, Window window)
+{
+	unsigned int width, height;
+	if (common_mode(display, window, &width, &height)) {
+		fprintf(stderr, "setting common mode: %dx%d\n", width, height);
+		set_common(display, window, width, height);
+	} else {
+		fprintf(stderr, "no common mode, setting auto.\n");
+		set_auto(display, window);
+	}
+}
+
 int main()
 {
 	Display *display = XOpenDisplay(0);
@@ -155,11 +199,7 @@ int main()
 
 	Window root = DefaultRootWindow(display);
 	current_state(display, root);
-	unsigned int width, height;
-	if (common_mode(display, root, &width, &height))
-		fprintf(stderr, "common mode: %dx%d\n", width, height);
-	else
-		fprintf(stderr, "no common mode\n");
+	lets_rock(display, root);
 	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
 	int countdown = 0;
@@ -173,10 +213,7 @@ int main()
 				sleep(1);
 			} else {
 				fprintf(stderr, "10 seconds elapsed since last event.\n");
-				if (common_mode(display, root, &width, &height))
-					fprintf(stderr, "common mode: %dx%d\n", width, height);
-				else
-					fprintf(stderr, "no common mode\n");
+				lets_rock(display, root);
 			}
 			continue;
 		}
