@@ -8,6 +8,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 #include <X11/extensions/Xrandr.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 char *con_str(Connection connection)
 {
@@ -54,6 +55,88 @@ void current_state(Display *display, Window window)
 	XRRFreeScreenResources(sr);
 }
 
+int get_wxh(XRRScreenResources *sr, RRMode mode, unsigned int *width, unsigned int *height)
+{
+	if (!mode)
+		return 0;
+	for (int i = 0; i < sr->nmode; i++) {
+		if (sr->modes[i].id == mode) {
+			*width = sr->modes[i].width;
+			*height = sr->modes[i].height;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int has_wxh(XRRScreenResources *sr, XRROutputInfo *oi, unsigned int width, unsigned int height)
+{
+	for (int i = 0; i < oi->nmode; i++) {
+		unsigned int w, h;
+		if (!get_wxh(sr, oi->modes[i], &w, &h))
+			return 0;
+		if (w == width && h == height)
+			return 1;
+	}
+	return 0;
+}
+
+XRROutputInfo *first_connected(XRRScreenResources *sr, XRROutputInfo **ois)
+{
+	for (int i = 0; i < sr->noutput; i++)
+		if (ois[i]->connection == RR_Connected)
+			return ois[i];
+	return 0;
+}
+
+int num_connected(XRRScreenResources *sr, XRROutputInfo **ois)
+{
+	int counter = 0;
+	for (int i = 0; i < sr->noutput; i++)
+		if (ois[i]->connection == RR_Connected)
+			counter++;
+	return counter;
+}
+
+int common_mode(Display *display, Window window, unsigned int *width, unsigned int *height)
+{
+	XRRScreenResources *sr = XRRGetScreenResources(display, window);
+	XRROutputInfo **ois = malloc(sizeof(XRROutputInfo *) * sr->noutput);
+	for (int i = 0; i < sr->noutput; i++)
+		ois[i] = XRRGetOutputInfo(display, sr, sr->outputs[i]);
+	int num = num_connected(sr, ois);
+	if (num <= 1) {
+		for (int i = 0; i < sr->noutput; i++)
+			XRRFreeOutputInfo(ois[i]);
+		free(ois);
+		XRRFreeScreenResources(sr);
+		return 0;
+	}
+	XRROutputInfo *first = first_connected(sr, ois);
+	int counter = 0;
+	for (int k = 0; k < first->nmode; k++) {
+		counter = 1;
+		if (!get_wxh(sr, first->modes[k], width, height))
+			exit(1);
+		for (int j = 0; j < sr->noutput; j++) {
+			if (ois[j]->connection != RR_Connected)
+				continue;
+			if (ois[j] == first)
+				continue;
+			if (has_wxh(sr, ois[j], *width, *height))
+				counter++;
+		}
+		if (num == counter)
+			break;
+	}
+
+	for (int i = 0; i < sr->noutput; i++)
+		XRRFreeOutputInfo(ois[i]);
+	free(ois);
+	XRRFreeScreenResources(sr);
+	return num == counter;
+}
+
 int main()
 {
 	Display *display = XOpenDisplay(0);
@@ -71,6 +154,9 @@ int main()
 
 	Window root = DefaultRootWindow(display);
 	current_state(display, root);
+	unsigned int width, height;
+	if (common_mode(display, root, &width, &height))
+		fprintf(stderr, "common mode: %dx%d\n", width, height);
 	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
 	while (1) {
@@ -90,6 +176,10 @@ int main()
 		XRRScreenResources *sr = XRRGetScreenResources(display, ne->window);
 		output_info(display, sr, ocne->output);
 		XRRFreeScreenResources(sr);
+		if (common_mode(display, root, &width, &height))
+			fprintf(stderr, "common mode: %dx%d\n", width, height);
+		else
+			fprintf(stderr, "no common mode\n");
 	}
 	XCloseDisplay(display);
 
