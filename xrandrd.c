@@ -152,6 +152,7 @@ void set_common(Display *display, Window window, unsigned int width, unsigned in
 	}
 	XRRFreeScreenResources(sr);
 	fprintf(stdout, "\n");
+	fflush(stdout);
 }
 
 void set_auto(Display *display, Window window)
@@ -168,6 +169,7 @@ void set_auto(Display *display, Window window)
 	}
 	XRRFreeScreenResources(sr);
 	fprintf(stdout, "\n");
+	fflush(stdout);
 }
 
 void lets_rock(Display *display, Window window)
