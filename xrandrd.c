@@ -209,12 +209,12 @@ int main()
 		XEvent event;
 		if (!countdown || XPending(display)) {
 			XNextEvent(display, &event);
-			countdown = 10;
+			countdown = 5;
 		} else {
 			if (--countdown) {
 				sleep(1);
 			} else {
-				fprintf(stderr, "10 seconds elapsed since last event.\n");
+				fprintf(stderr, "5 seconds elapsed since last event.\n");
 				lets_rock(display, root);
 			}
 			continue;
