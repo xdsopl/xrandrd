@@ -158,6 +158,8 @@ int main()
 	unsigned int width, height;
 	if (common_mode(display, root, &width, &height))
 		fprintf(stderr, "common mode: %dx%d\n", width, height);
+	else
+		fprintf(stderr, "no common mode\n");
 	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
 	int countdown = 0;
