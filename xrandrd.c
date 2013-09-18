@@ -167,8 +167,9 @@ int main()
 			XNextEvent(display, &event);
 			countdown = 10;
 		} else {
-			sleep(1);
-			if (!(--countdown)) {
+			if (--countdown) {
+				sleep(1);
+			} else {
 				fprintf(stderr, "10 seconds elapsed since last event.\n");
 				if (common_mode(display, root, &width, &height))
 					fprintf(stderr, "common mode: %dx%d\n", width, height);
