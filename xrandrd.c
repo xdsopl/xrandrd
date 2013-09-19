@@ -204,17 +204,18 @@ int main()
 	lets_rock(display, root);
 	XRRSelectInput(display, root, RROutputChangeNotifyMask);
 
+	int wait_seconds = 3;
 	int countdown = 0;
 	while (1) {
 		XEvent event;
 		if (!countdown || XPending(display)) {
 			XNextEvent(display, &event);
-			countdown = 5;
+			countdown = wait_seconds;
 		} else {
 			if (--countdown) {
 				sleep(1);
 			} else {
-				fprintf(stderr, "5 seconds elapsed since last event.\n");
+				fprintf(stderr, "%d seconds elapsed since last event.\n", wait_seconds);
 				lets_rock(display, root);
 			}
 			continue;
