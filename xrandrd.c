@@ -7,6 +7,7 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 */
 
 #include <X11/extensions/Xrandr.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,18 +144,18 @@ void set_mode(Display *display, Window window, unsigned int width, unsigned int 
 	char mode[32] = "--auto";
 	if (width && height)
 		snprintf(mode, 32, "--mode %dx%d", width, height);
-	fprintf(stdout, "xrandr");
+	char str[4096] = "xrandr";
 	XRRScreenResources *sr = XRRGetScreenResources(display, window);
 	for (int i = 0; i < sr->noutput; i++) {
 		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
 		if (oi->connection == RR_Connected)
-			fprintf(stdout, " --output %s %s", oi->name, mode);
+			snprintf(str + strlen(str), sizeof(str) - strlen(str) - 1, " --output %s %s", oi->name, mode);
 		else if (oi->connection == RR_Disconnected)
-			fprintf(stdout, " --output %s --off", oi->name);
+			snprintf(str + strlen(str), sizeof(str) - strlen(str) - 1, " --output %s --off", oi->name);
 		XRRFreeOutputInfo(oi);
 	}
 	XRRFreeScreenResources(sr);
-	fprintf(stdout, "\n");
+	fprintf(stdout, "%s\n", str);
 	fflush(stdout);
 }
 
