@@ -138,31 +138,17 @@ int common_mode(Display *display, Window window, unsigned int *width, unsigned i
 	return num == counter;
 }
 
-void set_common(Display *display, Window window, unsigned int width, unsigned int height)
+void set_mode(Display *display, Window window, unsigned int width, unsigned int height)
 {
+	char mode[32] = "--auto";
+	if (width && height)
+		snprintf(mode, 32, "--mode %dx%d", width, height);
 	fprintf(stdout, "xrandr");
 	XRRScreenResources *sr = XRRGetScreenResources(display, window);
 	for (int i = 0; i < sr->noutput; i++) {
 		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
 		if (oi->connection == RR_Connected)
-			fprintf(stdout, " --output %s --mode %dx%d", oi->name, width, height);
-		else if (oi->connection == RR_Disconnected)
-			fprintf(stdout, " --output %s --off", oi->name);
-		XRRFreeOutputInfo(oi);
-	}
-	XRRFreeScreenResources(sr);
-	fprintf(stdout, "\n");
-	fflush(stdout);
-}
-
-void set_auto(Display *display, Window window)
-{
-	fprintf(stdout, "xrandr");
-	XRRScreenResources *sr = XRRGetScreenResources(display, window);
-	for (int i = 0; i < sr->noutput; i++) {
-		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
-		if (oi->connection == RR_Connected)
-			fprintf(stdout, " --output %s --auto", oi->name);
+			fprintf(stdout, " --output %s %s", oi->name, mode);
 		else if (oi->connection == RR_Disconnected)
 			fprintf(stdout, " --output %s --off", oi->name);
 		XRRFreeOutputInfo(oi);
@@ -177,10 +163,10 @@ void lets_rock(Display *display, Window window)
 	unsigned int width, height;
 	if (common_mode(display, window, &width, &height)) {
 		fprintf(stderr, "setting common mode: %dx%d\n", width, height);
-		set_common(display, window, width, height);
+		set_mode(display, window, width, height);
 	} else {
 		fprintf(stderr, "no common mode, setting auto.\n");
-		set_auto(display, window);
+		set_mode(display, window, 0, 0);
 	}
 }
 
