@@ -41,7 +41,7 @@ void output_info(Display *display, XRRScreenResources *sr, RROutput output)
 		mode = mode_str(sr, ci->mode);
 		XRRFreeCrtcInfo(ci);
 	}
-	fprintf(stderr, "%s %s %s", oi->name, con_str(oi->connection), mode);
+	fprintf(stderr, "xrandrd: %s %s %s", oi->name, con_str(oi->connection), mode);
 	for (int i = 0; i < oi->nmode; i++)
 		fprintf(stderr, " %s", mode_str(sr, oi->modes[i]));
 	fprintf(stderr, "\n");
@@ -156,17 +156,17 @@ void set_mode(Display *display, Window window, unsigned int width, unsigned int 
 	}
 	XRRFreeScreenResources(sr);
 	if (system(str))
-		fprintf(stderr, "executing \"%s\" failed!\n", str);
+		fprintf(stderr, "xrandrd: executing \"%s\" failed!\n", str);
 }
 
 void lets_rock(Display *display, Window window)
 {
 	unsigned int width, height;
 	if (common_mode(display, window, &width, &height)) {
-		fprintf(stderr, "setting common mode: %dx%d\n", width, height);
+		fprintf(stderr, "xrandrd: setting common mode: %dx%d\n", width, height);
 		set_mode(display, window, width, height);
 	} else {
-		fprintf(stderr, "no common mode, setting auto.\n");
+		fprintf(stderr, "xrandrd: no common mode, setting auto.\n");
 		set_mode(display, window, 0, 0);
 	}
 }
@@ -175,14 +175,14 @@ int main()
 {
 	Display *display = XOpenDisplay(0);
 	if (!display) {
-		fprintf(stderr, "could not open display \"%s\"\n", XDisplayName(0));
+		fprintf(stderr, "xrandrd: could not open display \"%s\"\n", XDisplayName(0));
 		return 1;
 	}
 
 	int event_base_return, error_base_return;
 	if (!XRRQueryExtension(display, &event_base_return, &error_base_return)) {
 		XCloseDisplay(display);
-		fprintf(stderr, "you do not have the Xrandr extension!\n");
+		fprintf(stderr, "xrandrd: you do not have the Xrandr extension!\n");
 		return 1;
 	}
 
@@ -202,22 +202,22 @@ int main()
 			if (--countdown) {
 				sleep(1);
 			} else {
-				fprintf(stderr, "%d seconds elapsed since last event.\n", wait_seconds);
+				fprintf(stderr, "xrandrd: %d seconds elapsed since last event.\n", wait_seconds);
 				lets_rock(display, root);
 			}
 			continue;
 		}
 		if ((event.type-event_base_return) != RRNotify) {
-			fprintf(stderr, "Ignoring event type %d\n", event.type);
+			fprintf(stderr, "xrandrd: Ignoring event type %d\n", event.type);
 			continue;
 		}
 		XRRNotifyEvent *ne = (XRRNotifyEvent *)&event;
 		if (ne->subtype != RRNotify_OutputChange) {
-			fprintf(stderr, "Ignoring subtype %d\n", ne->subtype);
+			fprintf(stderr, "xrandrd: Ignoring subtype %d\n", ne->subtype);
 			continue;
 		}
 		XRROutputChangeNotifyEvent *ocne = (XRROutputChangeNotifyEvent *)&event;
-//		fprintf(stderr, "output: %lu connection: %d crtc: %lu mode: %lu\n", ocne->output, ocne->connection, ocne->crtc, ocne->mode);
+//		fprintf(stderr, "xrandrd: output: %lu connection: %d crtc: %lu mode: %lu\n", ocne->output, ocne->connection, ocne->crtc, ocne->mode);
 		XRRScreenResources *sr = XRRGetScreenResources(display, ne->window);
 		output_info(display, sr, ocne->output);
 		XRRFreeScreenResources(sr);
