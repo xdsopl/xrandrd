@@ -10,6 +10,7 @@ install: xrandrd
 	mkdir -p $(HOME)/bin
 	mkdir -p $(HOME)/.config/autostart
 	sed "s@^Exec=.*@Exec=$(HOME)/bin/xrandrd@" < xrandrd.desktop > $(HOME)/.config/autostart/xrandrd.desktop
+	rm -f $(HOME)/bin/xrandrd
 	cp xrandrd $(HOME)/bin/xrandrd
 
 uninstall:
