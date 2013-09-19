@@ -155,8 +155,8 @@ void set_mode(Display *display, Window window, unsigned int width, unsigned int 
 		XRRFreeOutputInfo(oi);
 	}
 	XRRFreeScreenResources(sr);
-	fprintf(stdout, "%s\n", str);
-	fflush(stdout);
+	if (system(str))
+		fprintf(stderr, "executing \"%s\" failed!\n", str);
 }
 
 void lets_rock(Display *display, Window window)

@@ -6,11 +6,9 @@ You should have received a copy of the CC0 Public Domain Dedication along with t
 
 WIP: this is still not finished.
 proof of concept can be found in "configure_displays.sh"
+for the moment, we execute xrandr via system() to delegate the actual changes.
 
 Usage: xrandrd
-
-for the moment, we need xrandr to delegate the actual changes:
-# xrandrd | while read line ; do $line ; done
 
 xrandrd will wait until a display get (dis-)connected and do the following:
 
