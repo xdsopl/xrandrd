@@ -139,22 +139,50 @@ int common_mode(Display *display, Window window, unsigned int *width, unsigned i
 	return num == counter;
 }
 
+int is_wxh(Display *display, XRRScreenResources *sr, XRROutputInfo *oi, unsigned int width, unsigned int height)
+{
+	if (!oi->crtc)
+		return 0;
+	XRRCrtcInfo *ci = XRRGetCrtcInfo(display, sr, oi->crtc);
+	if (!width || !height) {
+		int tmp = ci->mode == oi->modes[0];
+		XRRFreeCrtcInfo(ci);
+		return tmp;
+	}
+	int tmp = 0;
+	for (int i = 0; i < sr->nmode; i++) {
+		if (sr->modes[i].id == ci->mode) {
+			if (width == sr->modes[i].width && height == sr->modes[i].height)
+				tmp = 1;
+			break;
+		}
+	}
+	XRRFreeCrtcInfo(ci);
+	return tmp;
+}
+
 void set_mode(Display *display, Window window, unsigned int width, unsigned int height)
 {
 	char mode[32] = "--auto";
 	if (width && height)
 		snprintf(mode, 32, "--mode %dx%d", width, height);
 	char str[4096] = "xrandr";
+	size_t before = strlen(str);
 	XRRScreenResources *sr = XRRGetScreenResources(display, window);
 	for (int i = 0; i < sr->noutput; i++) {
 		XRROutputInfo *oi = XRRGetOutputInfo(display, sr, sr->outputs[i]);
-		if (oi->connection == RR_Connected)
+		if (oi->connection == RR_Connected && !is_wxh(display, sr, oi, width, height))
 			snprintf(str + strlen(str), sizeof(str) - strlen(str) - 1, " --output %s %s", oi->name, mode);
-		else if (oi->connection == RR_Disconnected)
+		else if (oi->connection == RR_Disconnected && oi->crtc)
 			snprintf(str + strlen(str), sizeof(str) - strlen(str) - 1, " --output %s --off", oi->name);
 		XRRFreeOutputInfo(oi);
 	}
 	XRRFreeScreenResources(sr);
+	size_t after = strlen(str);
+	if (before == after) {
+		fprintf(stderr, "xrandrd: configuration ok, nothing to be done.\n");
+		return;
+	}
 	if (system(str))
 		fprintf(stderr, "xrandrd: executing \"%s\" failed!\n", str);
 }
