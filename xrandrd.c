@@ -71,14 +71,19 @@ int get_wxh(XRRScreenResources *sr, RRMode mode, unsigned int *width, unsigned i
 	return 0;
 }
 
-int has_wxh(XRRScreenResources *sr, XRROutputInfo *oi, unsigned int width, unsigned int height)
+int has_wxh_preferred(XRRScreenResources *sr, XRROutputInfo *oi, unsigned int width, unsigned int height)
 {
+	unsigned int last_w = -1, last_h = -1;
 	for (int i = 0; i < oi->nmode; i++) {
 		unsigned int w, h;
 		if (!get_wxh(sr, oi->modes[i], &w, &h))
 			return 0;
+		if (last_w < w && last_h < h)
+			return 0;
 		if (w == width && h == height)
 			return 1;
+		last_w = w;
+		last_h = h;
 	}
 	return 0;
 }
@@ -100,7 +105,7 @@ int num_connected(XRRScreenResources *sr, XRROutputInfo **ois)
 	return counter;
 }
 
-int common_mode(Display *display, Window window, unsigned int *width, unsigned int *height)
+int preferred_common_mode(Display *display, Window window, unsigned int *width, unsigned int *height)
 {
 	XRRScreenResources *sr = XRRGetScreenResources(display, window);
 	XRROutputInfo **ois = malloc(sizeof(XRROutputInfo *) * sr->noutput);
@@ -116,16 +121,21 @@ int common_mode(Display *display, Window window, unsigned int *width, unsigned i
 	}
 	XRROutputInfo *first = first_connected(sr, ois);
 	int counter = 0;
+	unsigned int last_w = -1, last_h = -1;
 	for (int k = 0; k < first->nmode; k++) {
 		counter = 1;
 		if (!get_wxh(sr, first->modes[k], width, height))
 			exit(1);
+		if (last_w < *width && last_h < *height)
+			return 0;
+		last_w = *width;
+		last_h = *height;
 		for (int j = 0; j < sr->noutput; j++) {
 			if (ois[j]->connection != RR_Connected)
 				continue;
 			if (ois[j] == first)
 				continue;
-			if (has_wxh(sr, ois[j], *width, *height))
+			if (has_wxh_preferred(sr, ois[j], *width, *height))
 				counter++;
 		}
 		if (num == counter)
@@ -190,7 +200,7 @@ void set_mode(Display *display, Window window, unsigned int width, unsigned int 
 void lets_rock(Display *display, Window window)
 {
 	unsigned int width, height;
-	if (common_mode(display, window, &width, &height)) {
+	if (preferred_common_mode(display, window, &width, &height)) {
 		fprintf(stderr, "xrandrd: setting common mode: %dx%d\n", width, height);
 		set_mode(display, window, width, height);
 	} else {
