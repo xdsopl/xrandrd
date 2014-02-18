@@ -1,5 +1,5 @@
 CFLAGS = -std=c99 -W -Wall -O3 -D_POSIX_C_SOURCE
-LDFLAGS = -lXrandr
+LDFLAGS = -lXrandr -lX11
 
 xrandrd: xrandrd.c
 
